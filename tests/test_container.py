@@ -680,7 +680,7 @@ fi
             with self.subTest(port=port):
                 env_file.write_text(example.replace("WEB_HOST_PORT=8088", setting))
                 config = json.loads(self.docker("compose", "--env-file", str(env_file),
-                    "-f", str(ROOT / "compose.yaml"), "config", "--format", "json").stdout)
+                    "-f", str(ROOT / "compose.yaml.example"), "config", "--format", "json").stdout)
                 services = config["services"]
                 self.assertEqual(list(services), ["pia-transmission"])
                 self.assertEqual(services["pia-transmission"]["environment"]["WEB_BIND_IP"],
