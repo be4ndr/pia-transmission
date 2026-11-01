@@ -41,8 +41,13 @@ CIDRs, then recreate the container using your existing configuration. Open
 Persisted RPC authentication and optional RPC credential files still apply.
 
 `WEB_HOST_PORT` sets the published host port (default 8088). `WEB_BIND_IP` restricts the
-host listening address, while `LOCAL_NETWORK` enforces allowed source addresses
-inside the container. Verify source visibility on the intended Docker host/LAN;
+host listening address and is passed through the controller to set Transmission's
+`rpc-host-whitelist`. Startup forces `rpc-host-whitelist-enabled=true`, replacing
+persisted Host whitelist settings to preserve DNS rebinding protection. Access
+the UI/API using this IP; arbitrary DNS Host headers are rejected. Loopback RPC
+for port forwarding remains available. This Host check is separate from
+authentication, which remains governed by persisted settings. `LOCAL_NETWORK`
+enforces allowed source addresses inside the container. Verify source visibility on the intended Docker host/LAN;
 do not broaden the allowlist to compensate for unexpected NAT. IPv6 RPC remains
 unsupported. Port 8088 serves HTTP, so use it only on your trusted LAN.
 
