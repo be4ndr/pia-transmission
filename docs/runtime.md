@@ -42,7 +42,9 @@ Persisted RPC authentication and optional RPC credential files still apply.
 
 `WEB_HOST_PORT` sets the published host port (default 8088). `WEB_BIND_IP` restricts the
 host listening address and is passed through the controller to set Transmission's
-`rpc-host-whitelist`. Startup forces `rpc-host-whitelist-enabled=true`, replacing
+`rpc-host-whitelist`. Set optional `RPC_HOST_WHITELIST` in `.env` to a comma-separated
+list of IP addresses and DNS hostnames; when unset, it defaults to `WEB_BIND_IP`.
+Use each configured name or address in client URLs. Startup forces `rpc-host-whitelist-enabled=true`, replacing
 persisted Host whitelist settings to preserve DNS rebinding protection. Access
 the UI/API using this IP; arbitrary DNS Host headers are rejected. Loopback RPC
 for port forwarding remains available. This Host check is separate from
