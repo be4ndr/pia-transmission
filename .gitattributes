@@ -1,0 +1,2 @@
+# Empty unified-diff context lines require their leading space.
+/webui/transmission-web/compatibility.patch whitespace=-blank-at-eol

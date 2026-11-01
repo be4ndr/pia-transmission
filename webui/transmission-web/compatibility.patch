@@ -1,0 +1,103 @@
+--- a/src/api/rpc.ts
++++ b/src/api/rpc.ts
+@@ -644,7 +644,7 @@
+ ): Promise<T | undefined> {
+   try {
+     const res = await instance.post('', { method, arguments: args }, config)
+-    if (res.status !== 200) {
++    if (res.status !== 200 || res.data?.result !== 'success') {
+       throw new Error('RPC failed')
+     }
+     return res.data
+--- a/src/router/index.ts
++++ b/src/router/index.ts
+@@ -1,4 +1,4 @@
+-import { createRouter, createWebHistory } from 'vue-router'
++import { createRouter, createWebHashHistory } from 'vue-router'
+ import type { RouteRecordRaw } from 'vue-router'
+ import LoginView from '../views/LoginView.vue'
+ import DashboardView from '../views/DashboardView.vue'
+@@ -11,7 +11,7 @@
+ ]
+ 
+ const router = createRouter({
+-  history: createWebHistory(import.meta.env.VITE_BASE_URL || '/'),
++  history: createWebHashHistory(import.meta.env.BASE_URL),
+   routes
+ })
+ 
+--- a/src/components/dialog/settings/SettingsContent.vue
++++ b/src/components/dialog/settings/SettingsContent.vue
+@@ -233,6 +233,7 @@
+         'custom-download-dirs'
+       ])
+     )
++    settingStore.setting.defaultTrackers = (sessionForm.value['default-trackers'] || '').split('\n').filter(Boolean)
+     message.success($t('settings.saveSuccess'))
+     emit('save-success')
+   } catch {
+--- a/src/components/dialog/AddDialog.vue
++++ b/src/components/dialog/AddDialog.vue
+@@ -220,11 +220,16 @@
+       const defaultTrackers = settingStore.setting.defaultTrackers || []
+       if (defaultTrackers.length > 0) {
+         try {
+-          await trpc.torrentSet({
+-            ids: addedTorrent.id,
+-            trackerAdd: defaultTrackers
+-          })
+-          console.debug(`已自动为种子 ${addedTorrent.id} 追加默认 trackers`)
++          const details = await trpc.torrentGet(['isPrivate', 'metadataPercentComplete'], addedTorrent.id)
++          const torrent = details.arguments.torrents[0]
++          // Magnets are not known to be public until their metadata is complete.
++          if (torrent?.metadataPercentComplete === 1 && torrent.isPrivate === false) {
++            await trpc.torrentSet({
++              ids: addedTorrent.id,
++              trackerAdd: defaultTrackers
++            })
++            console.debug(`已自动为种子 ${addedTorrent.id} 追加默认 trackers`)
++          }
+         } catch (err) {
+           console.error('追加默认 trackers 失败', err)
+         }
+--- a/src/store/setting.ts
++++ b/src/store/setting.ts
+@@ -3,29 +3,6 @@
+ import { useThemeVars, type CustomThemeCommonVars, type ThemeCommonVars } from 'naive-ui'
+ import { setDomain as setDomainApi, setAuth as setAuthApi } from '@/api/rpc'
+ import { setLocale } from '@/i18n'
+-
+-const DEFAULT_TRACKERS = [
+-  'udp://tracker.opentrackr.org:1337/announce',
+-  'udp://open.demonii.com:1337/announce',
+-  'udp://open.stealth.si:80/announce',
+-  'udp://exodus.desync.com:6969/announce',
+-  'udp://tracker.torrent.eu.org:451/announce',
+-  'udp://explodie.org:6969/announce',
+-  'udp://wepzone.net:6969/announce',
+-  'udp://ttk2.nbaonlineservice.com:6969/announce',
+-  'udp://tracker.tryhackx.org:6969/announce',
+-  'udp://tracker.theoks.net:6969/announce',
+-  'udp://tracker.srv00.com:6969/announce',
+-  'udp://tracker.ololosh.space:6969/announce',
+-  'udp://tracker.fnix.net:6969/announce',
+-  'udp://tracker.dler.org:6969/announce',
+-  'udp://t.overflow.biz:6969/announce',
+-  'udp://retracker01-msk-virt.corbina.net:80/announce',
+-  'udp://public.tracker.vraphim.com:6969/announce',
+-  'udp://p4p.arenabg.com:1337/announce',
+-  'udp://opentracker.io:6969/announce',
+-  'udp://open.dstud.io:6969/announce'
+-]
+ 
+ export interface IPolling {
+   sessionInterval: number
+@@ -63,7 +40,7 @@
+     {
+       theme: 'light',
+       language: 'zh-CN',
+-      defaultTrackers: DEFAULT_TRACKERS,
++      defaultTrackers: [] as string[],
+       domain: window.location.origin,
+       savePassword: false,
+       singleLine: true,

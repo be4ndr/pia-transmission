@@ -1,0 +1,55 @@
+name: pia-transmission
+
+services:
+  pia-transmission:
+    # PIA OpenVPN runtime with automatic port forwarding in supported regions.
+    build: .
+    image: pia-transmission:dev
+    container_name: pia-transmission
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+
+    cap_add:
+      - NET_ADMIN
+    security_opt:
+      - no-new-privileges:true
+    devices:
+      - /dev/net/tun:/dev/net/tun
+
+    ports:
+      # Restrict the HOST address. This is not a source-IP ACL.
+      - "${WEB_BIND_IP:?set WEB_BIND_IP}:${WEB_HOST_PORT:-8088}:9091/tcp"
+
+    environment:
+      TZ: "${TZ:-UTC}"
+      PUID: "${PUID:?set PUID}"
+      PGID: "${PGID:?set PGID}"
+      PIA_REGION: "${PIA_REGION:?set PIA_REGION}"
+      PIA_PROTOCOL: "openvpn"
+      PIA_PORT_FORWARDING: "${PIA_PORT_FORWARDING:-true}"
+      LOCAL_NETWORK: "${LOCAL_NETWORK:?set LOCAL_NETWORK}"
+      VPN_START_TIMEOUT: "${VPN_START_TIMEOUT:-90}"
+      VPN_RETRY_DELAY: "${VPN_RETRY_DELAY:-5}"
+      TRANSMISSION_RPC_PORT: "9091"
+      TRANSMISSION_WEB_UI: "${TRANSMISSION_WEB_UI-transmission-web}"
+      TRANSMISSION_DOWNLOAD_DIR: "/data/complete"
+      TRANSMISSION_INCOMPLETE_DIR: "/data/incomplete"
+      TRANSMISSION_INCOMPLETE_DIR_ENABLED: "true"
+
+    secrets:
+      - pia_username
+      - pia_password
+
+    volumes:
+      - "${CONFIG_DIR:?set CONFIG_DIR}:/config"
+      - ${DATA_DIR:?set DATA_DIR}:/data
+
+    # No healthcheck until a real VPN-aware probe has been implemented.
+    # No privileged:true, host network, host PID, docker.sock or broad host mounts.
+
+secrets:
+  pia_username:
+    file: "${PIA_SECRETS_DIR:?set PIA_SECRETS_DIR}/username"
+  pia_password:
+    file: "${PIA_SECRETS_DIR:?set PIA_SECRETS_DIR}/password"

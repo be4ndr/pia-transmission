@@ -1,0 +1,8 @@
+title = "pia-transmission publication checks"
+[extend]
+useDefault = true
+
+[[rules]]
+id = "private-user-path"
+description = "Absolute private user directory in publishable files"
+regex = '''(?:/home/|/Users/)[A-Za-z0-9_.-]+/'''

@@ -1,0 +1,14 @@
+/.local/
+/.artifacts/
+/.aws/
+/.agents/
+/.codex/
+.env
+.env.*
+!.env.example
+state/
+secrets/
+*.log
+__pycache__/
+*.py[cod]
+node_modules/

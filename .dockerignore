@@ -1,0 +1,21 @@
+# Only inputs consumed by Dockerfile COPY belong in the build context.
+**
+!Dockerfile
+!LICENSE
+!scripts/
+scripts/**
+!scripts/collect-node-notices.py
+!runtime/
+runtime/**
+!runtime/*.sh
+!runtime/drop-privileges.c
+!runtime/pia/
+runtime/pia/**
+!runtime/pia/ca.crt
+!runtime/pia/LICENSE
+!runtime/pia/README.md
+!webui/
+webui/**
+!webui/transmission-web/
+webui/transmission-web/**
+!webui/transmission-web/compatibility.patch

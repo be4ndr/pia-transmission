@@ -1,0 +1,10 @@
+{
+  "name": "transmission-web-compatibility",
+  "private": true,
+  "version": "0.1.6",
+  "description": "Isolated build and regression tooling; not part of the container runtime",
+  "devDependencies": {
+    "playwright": "1.61.1",
+    "pnpm": "10.15.1"
+  }
+}
