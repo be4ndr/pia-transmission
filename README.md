@@ -9,8 +9,9 @@ remain available after the first successful connection.
 ## Configure and build
 
 Requirements: a Linux Docker engine with Compose, `/dev/net/tun`, and a PIA account.
-Copy `.env.example` to `.env` and replace documentation addresses with your Docker
-host IPv4 address and permitted LAN CIDRs. Set `CONFIG_DIR`, `DATA_DIR`, `PUID`,
+Copy `.env.example` to `.env` and `compose.yaml.example` to
+`compose.yaml`. Replace documentation addresses with your Docker host IPv4
+address and permitted LAN CIDRs. Set `CONFIG_DIR`, `DATA_DIR`, `PUID`,
 `PGID` and a current PIA region ID. Keep PIA username/password files outside the
 repository in the configured `PIA_SECRETS_DIR` (directory 0700, files 0600).
 
