@@ -1,6 +1,7 @@
 #!/bin/sh
 set -eu
 umask 077
+: "${WEB_BIND_IP:?set WEB_BIND_IP}"
 cd /config
 temporary=$(mktemp /config/.settings.XXXXXX)
 trap 'rm -f "$temporary"' EXIT
@@ -22,6 +23,8 @@ printf '%s\n' "$settings_json" | jq '
     | .["rpc-port"] = 9091
     | .["rpc-bind-address"] = "0.0.0.0"
     | .["rpc-whitelist-enabled"] = false
+    | .["rpc-host-whitelist-enabled"] = true
+    | .["rpc-host-whitelist"] = env.WEB_BIND_IP
     | if (env.TRANSMISSION_DOWNLOAD_DIR // "") != "" then
         .["download-dir"] = env.TRANSMISSION_DOWNLOAD_DIR
       elif has("download-dir") then . else .["download-dir"] = "/data/complete" end
@@ -36,5 +39,5 @@ printf '%s\n' "$settings_json" | jq '
 ' > "$temporary"
 mv -f "$temporary" settings.json
 trap - EXIT TERM INT
-unset TRANSMISSION_DOWNLOAD_DIR TRANSMISSION_INCOMPLETE_DIR TRANSMISSION_INCOMPLETE_DIR_ENABLED
+unset WEB_BIND_IP TRANSMISSION_DOWNLOAD_DIR TRANSMISSION_INCOMPLETE_DIR TRANSMISSION_INCOMPLETE_DIR_ENABLED
 exec /usr/bin/transmission-daemon --foreground --config-dir /config
