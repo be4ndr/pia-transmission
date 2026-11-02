@@ -19,6 +19,9 @@ If the WebUI is unreachable, verify `WEB_BIND_IP` belongs to the Docker host,
 the published port is free, and the source address visible to the container is
 included in `LOCAL_NETWORK`. Docker NAT behavior can differ between hosts. Do not
 broaden the allowlist to hide unexpected source translation. IPv6 RPC is unsupported.
+An HTTP 421 response indicates a rejected Host header: use the configured
+`WEB_BIND_IP` in the URL and recreate the container after changing it. Do not
+disable `rpc-host-whitelist-enabled` to resolve access problems.
 RPC uses HTTP; use a trusted LAN and enable authentication in persisted settings.
 
 ## Port forwarding

@@ -40,15 +40,14 @@ to the Docker host's LAN IPv4 address where Compose should listen, and set
 source addresses. `LOCAL_NETWORK` remains the source-address filter inside the
 container.
 
-Transmission also checks the HTTP `Host` header against `RPC_HOST_WHITELIST`.
-Set it to a comma-separated list of IP addresses and DNS hostnames that clients
-will use. For example:
+Transmission checks the HTTP `Host` header against `RPC_HOST_WHITELIST`. Set
+it to a comma-separated list of IP addresses and DNS hostnames clients will use.
+For example:
 `RPC_HOST_WHITELIST=192.0.2.10,transmission.example,transmission.lan.example`.
-The example addresses and names are reserved for documentation; replace them
-with your own values. If `RPC_HOST_WHITELIST` is unset, it defaults to
-`WEB_BIND_IP`. Keep the host binding and Host whitelist aligned with the URL
-used by clients. A Host whitelist match does not bypass `LOCAL_NETWORK` or
-persisted RPC authentication.
+These are documentation-safe values; replace them with your own. If
+`RPC_HOST_WHITELIST` is unset, it defaults to `WEB_BIND_IP`. Use a listed
+address or name in client URLs. A Host whitelist match does not bypass
+`LOCAL_NETWORK` or persisted RPC authentication.
 
 Open `http://<WEB_BIND_IP>:8088/transmission/web/`; API clients use
 `http://<WEB_BIND_IP>:8088/transmission/rpc` and Transmission's session-ID handshake.

@@ -4,7 +4,7 @@ permissions:
   contents: read
 jobs:
   validate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -25,5 +25,5 @@ jobs:
           python3 -m unittest discover -s tests -v
           python3 -m compileall -q runtime tests scripts
           for script in runtime/*.sh; do sh -n "$script"; done
-          docker compose --env-file .env.example config -q
+          docker compose --env-file .env.example -f compose.yaml.example config -q
           git diff --check

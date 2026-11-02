@@ -39,7 +39,7 @@ class RuntimeTests(unittest.TestCase):
         self.events = self.base / "events"
         self.env = dict(os.environ, PATH=f"{self.bin}:{os.environ['PATH']}",
                         PUID="1234", PGID="2345", LOCAL_NETWORK="192.0.2.0/24",
-                        PIA_REGION="test", VPN_START_TIMEOUT="3", VPN_RETRY_DELAY="1",
+                        PIA_REGION="test", WEB_BIND_IP="192.0.2.10", RPC_HOST_WHITELIST="", VPN_START_TIMEOUT="3", VPN_RETRY_DELAY="1",
                         EVENTS=str(self.events), CONTROLLER_SECRET="not-for-child")
 
     def command(self, name, body):
@@ -262,7 +262,8 @@ exec /bin/sh -c '{child_body}'
 
     def test_invalid_configuration_never_launches_child(self):
         for changes in ({"PUID": "0"}, {"PGID": "0"}, {"PUID": ""},
-                        {"TRANSMISSION_RPC_PORT": "9092"}, {"LOCAL_NETWORK": "bad;accept"}):
+                        {"TRANSMISSION_RPC_PORT": "9092"}, {"WEB_BIND_IP": ""},
+                        {"LOCAL_NETWORK": "bad;accept"}):
             with self.subTest(changes=changes):
                 # New harness per case to avoid sharing previous command output.
                 if (self.base / "runtime").exists():
@@ -279,6 +280,8 @@ exec /bin/sh -c '{child_body}'
         child_env = (self.base / "child-env").read_text()
         self.assertNotIn("CONTROLLER_SECRET", child_env)
         self.assertNotIn("LOCAL_NETWORK", child_env)
+        self.assertIn("WEB_BIND_IP=192.0.2.10\n", child_env)
+        self.assertIn("RPC_HOST_WHITELIST=192.0.2.10\n", child_env)
         self.assertIn(f"HOME={self.base}/config", child_env)
         self.assertEqual((self.base / "run/secrets").stat().st_mode & 0o777, 0o700)
 
@@ -382,6 +385,22 @@ while :; do sleep 0.1; done
         self.assertIs(values["incomplete-dir-enabled"], True)
         self.assertEqual(settings.stat().st_mode & 0o777, 0o600)
         self.assertEqual(values["umask"], 0o077)
+
+    def test_host_whitelist_overrides_unsafe_persisted_settings(self):
+        for host in ("192.0.2.10", "198.51.100.20"):
+            with self.subTest(host=host):
+                result, settings = self.prepare_settings(
+                    {"rpc-host-whitelist-enabled": False, "rpc-host-whitelist": "*",
+                     "rpc-authentication-required": True, "rpc-username": "user",
+                     "rpc-password": "{persisted-hash}"},
+                    {"WEB_BIND_IP": host, "RPC_HOST_WHITELIST": ""})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                values = json.loads(settings.read_text())
+                self.assertIs(values["rpc-host-whitelist-enabled"], True)
+                self.assertEqual(values["rpc-host-whitelist"], host)
+                self.assertIs(values["rpc-authentication-required"], True)
+                self.assertEqual(values["rpc-username"], "user")
+                self.assertEqual(values["rpc-password"], "{persisted-hash}")
 
     def test_daemon_umask_overrides_persisted_values(self):
         for mask in (0, 0o022, 0o077):

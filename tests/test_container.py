@@ -290,6 +290,7 @@ fi
                    "--security-opt", "no-new-privileges:true",
                    "-e", "PUID=001234", "-e", "PGID=002345",
                    "-e", "PIA_REGION=test", "-e", "VPN_START_TIMEOUT=6", "-e", "VPN_RETRY_DELAY=2",
+                   "-e", "WEB_BIND_IP=192.0.2.10",
                    "-e", "LOCAL_NETWORK=" + (network or self.cidr),
                    "-e", "PIA_CONTROLLER_TEST_SECRET=do-not-inherit",
                    "--device", "/dev/net/tun",
@@ -656,6 +657,33 @@ fi
             f"wget -S -T 3 -O /dev/null http://{address}:9091/transmission/rpc", check=False)
         self.assertIn("409", response.stderr)
 
+    def test_lan_rpc_configured_host_and_unauthorized_host_headers(self):
+        name = self.start("host-whitelist", overrides={"RPC_HOST_WHITELIST":
+            "192.0.2.10,transmission.example.lan"}, settings={
+            "rpc-host-whitelist-enabled": False, "rpc-host-whitelist": "*"})
+        self.ready(name)
+        address = self.address(name)
+        saved = json.loads(self.exec(name, "cat /config/settings.json").stdout)
+        self.assertIs(saved["rpc-host-whitelist-enabled"], True)
+        self.assertEqual(saved["rpc-host-whitelist"], "192.0.2.10,transmission.example.lan")
+        for host, status in (("192.0.2.10:8088", "409"),
+                             ("transmission.example.lan:8088", "409"),
+                             ("unauthorized.example:8088", "421")):
+            with self.subTest(host=host):
+                response = self.exec(self.peer,
+                    f"wget -S -T 3 --header='Host: {host}' -O /dev/null "
+                    f"http://{address}:9091/transmission/rpc", check=False)
+                self.assertIn(status, response.stderr)
+
+    def test_compose_rpc_host_whitelist_override(self):
+        env_file = Path(self.temp.name) / "compose.env"
+        env_file.write_text((ROOT / ".env.example").read_text() +
+                            "\nRPC_HOST_WHITELIST=192.0.2.10,transmission.example.lan\n")
+        config = json.loads(self.docker("compose", "--env-file", str(env_file),
+            "-f", str(ROOT / "compose.yaml.example"), "config", "--format", "json").stdout)
+        self.assertEqual(config["services"]["pia-transmission"]["environment"]["RPC_HOST_WHITELIST"],
+                         "192.0.2.10,transmission.example.lan")
+
     def test_compose_direct_rpc_default_and_override(self):
         env_file = Path(self.temp.name) / "compose.env"
         example = (ROOT / ".env.example").read_text()
@@ -663,9 +691,13 @@ fi
             with self.subTest(port=port):
                 env_file.write_text(example.replace("WEB_HOST_PORT=8088", setting))
                 config = json.loads(self.docker("compose", "--env-file", str(env_file),
-                    "-f", str(ROOT / "compose.yaml"), "config", "--format", "json").stdout)
+                    "-f", str(ROOT / "compose.yaml.example"), "config", "--format", "json").stdout)
                 services = config["services"]
                 self.assertEqual(list(services), ["pia-transmission"])
+                self.assertEqual(services["pia-transmission"]["environment"]["WEB_BIND_IP"],
+                                 "192.0.2.10")
+                self.assertEqual(services["pia-transmission"]["environment"]["RPC_HOST_WHITELIST"],
+                                 "192.0.2.10")
                 self.assertEqual(services["pia-transmission"]["ports"], [{
                     "mode": "ingress", "host_ip": "192.0.2.10", "target": 9091,
                     "published": port, "protocol": "tcp"}])

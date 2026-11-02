@@ -15,6 +15,8 @@ PGID=$(printf '%s' "$PGID" | sed 's/^0*//')
 [ "${TRANSMISSION_RPC_PORT:-9091}" = 9091 ] || die 'RPC port must be 9091'
 [ "${PIA_PROTOCOL:-openvpn}" = openvpn ] || die 'only OpenVPN is supported'
 : "${PIA_REGION:?set PIA_REGION}"
+: "${WEB_BIND_IP:?set WEB_BIND_IP}"
+RPC_HOST_WHITELIST=${RPC_HOST_WHITELIST:-$WEB_BIND_IP}
 PIA_PORT_FORWARDING=${PIA_PORT_FORWARDING:-true}
 case "$PIA_PORT_FORWARDING" in true|false) ;; *) die 'PIA_PORT_FORWARDING must be true or false' ;; esac
 VPN_START_TIMEOUT=${VPN_START_TIMEOUT:-90}
@@ -111,6 +113,8 @@ start_transmission() {
         if [ "$directory" != /data ]; then chown -h "$PUID:$PGID" "$directory"; fi
     done
     env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/config TZ="${TZ:-UTC}" \
+        WEB_BIND_IP="$WEB_BIND_IP" \
+        RPC_HOST_WHITELIST="$RPC_HOST_WHITELIST" \
         TRANSMISSION_WEB_HOME="$TRANSMISSION_WEB_HOME" \
         TRANSMISSION_DOWNLOAD_DIR="${TRANSMISSION_DOWNLOAD_DIR-}" \
         TRANSMISSION_INCOMPLETE_DIR="${TRANSMISSION_INCOMPLETE_DIR-}" \
