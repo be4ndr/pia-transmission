@@ -11,7 +11,12 @@ remain available after the first successful connection.
 Requirements: a Linux Docker engine with Compose, `/dev/net/tun`, and a PIA account.
 Copy `.env.example` to `.env` and `compose.yaml.example` to
 `compose.yaml`. Replace documentation addresses with your Docker host IPv4
-address and permitted LAN CIDRs. Set `CONFIG_DIR`, `DATA_DIR`, `PUID`,
+address and permitted LAN CIDRs. `WEB_BIND_IP` selects the host interface where
+Compose publishes the WebUI/RPC port. `RPC_HOST_WHITELIST` controls which HTTP
+Host header values Transmission accepts, defaulting to `WEB_BIND_IP` when unset.
+For access by IP and multiple DNS names, set
+`RPC_HOST_WHITELIST=192.0.2.10,transmission.example,transmission.lan.example`
+and use one of those values in the client URL. Set `CONFIG_DIR`, `DATA_DIR`, `PUID`,
 `PGID` and a current PIA region ID. Keep PIA username/password files outside the
 repository in the configured `PIA_SECRETS_DIR` (directory 0700, files 0600).
 
@@ -24,9 +29,11 @@ docker compose build
 docker compose up -d
 ```
 
-The UI is `http://<host-address>:8088/transmission/web/`; RPC uses
-`/transmission/rpc`. Binding an address is not a source ACL: verify that
-`LOCAL_NETWORK` matches the client addresses visible inside your container.
+The UI is `http://<WEB_BIND_IP>:8088/transmission/web/`; RPC uses
+`/transmission/rpc`. Host binding selects the host interface that receives
+connections; it does not filter client source addresses. `LOCAL_NETWORK` remains
+the source-address filter. The RPC Host whitelist separately checks the HTTP
+Host header and must include the IP or DNS name used in the URL.
 Fresh RPC settings do not require authentication. Enable RPC authentication for
 your deployment; see [runtime configuration](docs/runtime.md) for persisted
 settings, optional PF RPC credentials, WebUI selection, process/secret boundaries,

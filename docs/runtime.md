@@ -34,24 +34,28 @@ and a 30-second stop grace period.
 
 Compose publishes host TCP **8088** directly to Transmission's IPv4 RPC listener
 on container TCP 9091. No proxy or extra service is required. Set `WEB_BIND_IP`
-to the Docker host's LAN IPv4 address and `LOCAL_NETWORK` to the permitted client
-CIDRs, then recreate the container using your existing configuration. Open
-`http://<WEB_BIND_IP>:8088/transmission/web/`; API clients use
+to the Docker host's LAN IPv4 address where Compose should listen, and set
+`LOCAL_NETWORK` to the permitted client CIDRs, then recreate the container.
+`WEB_BIND_IP` controls the host interface binding; it does not filter client
+source addresses. `LOCAL_NETWORK` remains the source-address filter inside the
+container.
+
+Transmission checks the HTTP `Host` header against `RPC_HOST_WHITELIST`. Set
+it to a comma-separated list of IP addresses and DNS hostnames clients will use.
+For example:
+`RPC_HOST_WHITELIST=192.0.2.10,transmission.example,transmission.lan.example`.
+These are documentation-safe values; replace them with your own. If
+`RPC_HOST_WHITELIST` is unset, it defaults to `WEB_BIND_IP`. Use a listed
+address or name in client URLs. A Host whitelist match does not bypass
+`LOCAL_NETWORK` or persisted RPC authentication.
+
+Open `http://<WEB_BIND_IP>:8088/transmission/web/`; API clients use
 `http://<WEB_BIND_IP>:8088/transmission/rpc` and Transmission's session-ID handshake.
 Persisted RPC authentication and optional RPC credential files still apply.
-
-`WEB_HOST_PORT` sets the published host port (default 8088). `WEB_BIND_IP` restricts the
-host listening address and is passed through the controller to set Transmission's
-`rpc-host-whitelist`. Set optional `RPC_HOST_WHITELIST` in `.env` to a comma-separated
-list of IP addresses and DNS hostnames; when unset, it defaults to `WEB_BIND_IP`.
-Use each configured name or address in client URLs. Startup forces `rpc-host-whitelist-enabled=true`, replacing
-persisted Host whitelist settings to preserve DNS rebinding protection. Access
-the UI/API using this IP; arbitrary DNS Host headers are rejected. Loopback RPC
-for port forwarding remains available. This Host check is separate from
-authentication, which remains governed by persisted settings. `LOCAL_NETWORK`
-enforces allowed source addresses inside the container. Verify source visibility on the intended Docker host/LAN;
-do not broaden the allowlist to compensate for unexpected NAT. IPv6 RPC remains
-unsupported. Port 8088 serves HTTP, so use it only on your trusted LAN.
+`WEB_HOST_PORT` sets the published host port (default 8088). Verify source
+visibility on the intended Docker host/LAN; do not broaden the allowlist to
+compensate for unexpected NAT. IPv6 RPC remains unsupported. Port 8088 serves
+HTTP, so use it only on your trusted LAN.
 
 LAN access survives VPN downtime after the first successful VPN startup.
 Application egress still requires the VPN, and new LAN connections from the
