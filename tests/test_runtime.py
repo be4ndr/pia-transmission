@@ -39,7 +39,7 @@ class RuntimeTests(unittest.TestCase):
         self.events = self.base / "events"
         self.env = dict(os.environ, PATH=f"{self.bin}:{os.environ['PATH']}",
                         PUID="1234", PGID="2345", LOCAL_NETWORK="192.0.2.0/24",
-                        PIA_REGION="test", WEB_BIND_IP="192.0.2.10", VPN_START_TIMEOUT="3", VPN_RETRY_DELAY="1",
+                        PIA_REGION="test", WEB_BIND_IP="192.0.2.10", RPC_HOST_WHITELIST="", VPN_START_TIMEOUT="3", VPN_RETRY_DELAY="1",
                         EVENTS=str(self.events), CONTROLLER_SECRET="not-for-child")
 
     def command(self, name, body):
@@ -281,6 +281,7 @@ exec /bin/sh -c '{child_body}'
         self.assertNotIn("CONTROLLER_SECRET", child_env)
         self.assertNotIn("LOCAL_NETWORK", child_env)
         self.assertIn("WEB_BIND_IP=192.0.2.10\n", child_env)
+        self.assertIn("RPC_HOST_WHITELIST=192.0.2.10\n", child_env)
         self.assertIn(f"HOME={self.base}/config", child_env)
         self.assertEqual((self.base / "run/secrets").stat().st_mode & 0o777, 0o700)
 
@@ -392,7 +393,7 @@ while :; do sleep 0.1; done
                     {"rpc-host-whitelist-enabled": False, "rpc-host-whitelist": "*",
                      "rpc-authentication-required": True, "rpc-username": "user",
                      "rpc-password": "{persisted-hash}"},
-                    {"WEB_BIND_IP": host})
+                    {"WEB_BIND_IP": host, "RPC_HOST_WHITELIST": ""})
                 self.assertEqual(result.returncode, 0, result.stderr)
                 values = json.loads(settings.read_text())
                 self.assertIs(values["rpc-host-whitelist-enabled"], True)
